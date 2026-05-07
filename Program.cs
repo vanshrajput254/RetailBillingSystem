@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using RetailBillingSystem.Data;
 using RetailBillingSystem.Services;
 
+// ← YEH LINE ADD KARO SABSE PEHLE
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Services ─────────────────────────────────────────────────────────────────
@@ -16,7 +20,7 @@ builder.Services.AddControllersWithViews()
     });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+   options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IGSTService, GSTService>();
 builder.Services.AddScoped<IEmailService, EmailService>();

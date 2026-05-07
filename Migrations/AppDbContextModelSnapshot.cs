@@ -2,8 +2,8 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RetailBillingSystem.Data;
 
 #nullable disable
@@ -17,57 +17,108 @@ namespace RetailBillingSystem.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("RetailBillingSystem.Models.AppUser", b =>
+                {
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("AppUsers");
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = 1,
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3720),
+                            FullName = "Store Admin",
+                            IsActive = true,
+                            PasswordHash = "GHVQ3kffbwHsr+Nln/uxAZ75bXZpTR06zEi8m96TMBg=",
+                            Role = "Admin",
+                            Username = "admin"
+                        });
+                });
 
             modelBuilder.Entity("RetailBillingSystem.Models.Customer", b =>
                 {
                     b.Property<int>("CustomerId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CustomerId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CustomerId"));
 
                     b.Property<string>("Address")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("City")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("GSTIN")
                         .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
+                        .HasColumnType("character varying(15)");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
+                        .HasColumnType("character varying(15)");
 
                     b.Property<string>("PinCode")
                         .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("State")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("CustomerId");
 
@@ -78,7 +129,7 @@ namespace RetailBillingSystem.Migrations
                         {
                             CustomerId = 1,
                             City = "Bengaluru",
-                            CreatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3852),
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3680),
                             Email = "ravi@example.com",
                             GSTIN = "29ASHSS1234R1Z1",
                             IsActive = true,
@@ -90,7 +141,7 @@ namespace RetailBillingSystem.Migrations
                         {
                             CustomerId = 2,
                             City = "Mysuru",
-                            CreatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3860),
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3688),
                             Email = "meena@traders.com",
                             GSTIN = "29BBBCA1557C1Z1",
                             IsActive = true,
@@ -102,7 +153,7 @@ namespace RetailBillingSystem.Migrations
                         {
                             CustomerId = 3,
                             City = "Hubli",
-                            CreatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3862),
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3690),
                             IsActive = true,
                             Name = "Sunita Retail",
                             Phone = "9000000001",
@@ -114,28 +165,28 @@ namespace RetailBillingSystem.Migrations
                 {
                     b.Property<int>("InvoiceId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InvoiceId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InvoiceId"));
 
                     b.Property<string>("BuyerGSTIN")
                         .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
+                        .HasColumnType("character varying(15)");
 
                     b.Property<decimal>("CGSTAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("CustomerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("DueDate")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("GSTType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("GrandTotal")
                         .HasColumnType("decimal(18,2)");
@@ -144,22 +195,22 @@ namespace RetailBillingSystem.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("InvoiceDate")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<decimal>("SGSTAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Status")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("Subtotal")
                         .HasColumnType("decimal(18,2)");
@@ -174,7 +225,7 @@ namespace RetailBillingSystem.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("InvoiceId");
 
@@ -190,9 +241,9 @@ namespace RetailBillingSystem.Migrations
                 {
                     b.Property<int>("InvoiceItemId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InvoiceItemId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InvoiceItemId"));
 
                     b.Property<decimal>("DiscountAmount")
                         .HasColumnType("decimal(18,2)");
@@ -207,21 +258,21 @@ namespace RetailBillingSystem.Migrations
                         .HasColumnType("decimal(5,2)");
 
                     b.Property<int>("InvoiceId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("LineTotal")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ProductId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<int>("Quantity")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("Rate")
                         .HasColumnType("decimal(18,2)");
@@ -242,31 +293,31 @@ namespace RetailBillingSystem.Migrations
                 {
                     b.Property<int>("ProductId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ProductId"));
 
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("GSTRate")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("numeric");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("LowStockThreshold")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<decimal>("Rate")
                         .HasColumnType("decimal(18,2)");
@@ -274,13 +325,13 @@ namespace RetailBillingSystem.Migrations
                     b.Property<string>("SKU")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<int>("StockQuantity")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("ProductId");
 
@@ -294,7 +345,7 @@ namespace RetailBillingSystem.Migrations
                         {
                             ProductId = 1,
                             Category = "Groceries",
-                            CreatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3613),
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3248),
                             GSTRate = 5m,
                             IsActive = true,
                             LowStockThreshold = 10,
@@ -302,13 +353,13 @@ namespace RetailBillingSystem.Migrations
                             Rate = 350m,
                             SKU = "SKU001",
                             StockQuantity = 150,
-                            UpdatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3616)
+                            UpdatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3251)
                         },
                         new
                         {
                             ProductId = 2,
                             Category = "Groceries",
-                            CreatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3624),
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3260),
                             GSTRate = 5m,
                             IsActive = true,
                             LowStockThreshold = 10,
@@ -316,13 +367,13 @@ namespace RetailBillingSystem.Migrations
                             Rate = 22m,
                             SKU = "SKU002",
                             StockQuantity = 8,
-                            UpdatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3624)
+                            UpdatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3261)
                         },
                         new
                         {
                             ProductId = 3,
                             Category = "Household",
-                            CreatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3627),
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3264),
                             GSTRate = 18m,
                             IsActive = true,
                             LowStockThreshold = 10,
@@ -330,13 +381,13 @@ namespace RetailBillingSystem.Migrations
                             Rate = 185m,
                             SKU = "SKU003",
                             StockQuantity = 60,
-                            UpdatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3627)
+                            UpdatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3264)
                         },
                         new
                         {
                             ProductId = 4,
                             Category = "Personal Care",
-                            CreatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3629),
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3266),
                             GSTRate = 12m,
                             IsActive = true,
                             LowStockThreshold = 10,
@@ -344,13 +395,13 @@ namespace RetailBillingSystem.Migrations
                             Rate = 95m,
                             SKU = "SKU004",
                             StockQuantity = 45,
-                            UpdatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3630)
+                            UpdatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3266)
                         },
                         new
                         {
                             ProductId = 5,
                             Category = "Household",
-                            CreatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3631),
+                            CreatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3269),
                             GSTRate = 18m,
                             IsActive = true,
                             LowStockThreshold = 10,
@@ -358,7 +409,7 @@ namespace RetailBillingSystem.Migrations
                             Rate = 310m,
                             SKU = "SKU005",
                             StockQuantity = 5,
-                            UpdatedAt = new DateTime(2026, 4, 18, 4, 50, 46, 450, DateTimeKind.Utc).AddTicks(3632)
+                            UpdatedAt = new DateTime(2026, 5, 7, 12, 1, 36, 218, DateTimeKind.Utc).AddTicks(3270)
                         });
                 });
 
