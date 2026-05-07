@@ -1,0 +1,49 @@
+@model IEnumerable<RetailBillingSystem.Models.Invoice>
+@{
+    ViewData["Title"] = "All Invoices";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<input class="search-bar" id="searchBox" placeholder="Search by invoice # or customer…" oninput="filterTable()" />
+
+<div class="card">
+    <div class="card-body p0">
+        <table id="invoiceTable">
+            <thead>
+                <tr>
+                    <th>Invoice #</th><th>Customer</th><th>Date</th>
+                    <th>Subtotal</th><th>GST</th><th>Total</th><th>Status</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var inv in Model)
+                {
+                    <tr>
+                        <td><strong>@inv.InvoiceNumber</strong></td>
+                        <td>@inv.Customer?.Name</td>
+                        <td>@inv.InvoiceDate.ToString("dd MMM yyyy")</td>
+                        <td>₹@inv.Subtotal.ToString("N2")</td>
+                        <td>₹@inv.TotalGST.ToString("N2")</td>
+                        <td><strong>₹@inv.GrandTotal.ToString("N2")</strong></td>
+                        <td><span class="badge badge-@inv.Status.ToString().ToLower()">@inv.Status</span></td>
+                        <td style="display:flex;gap:6px;">
+                            <a asp-controller="Invoice" asp-action="Details" asp-route-id="@inv.InvoiceId" class="btn" style="padding:4px 10px;font-size:11px;">View</a>
+                            <a asp-controller="Invoice" asp-action="Print"   asp-route-id="@inv.InvoiceId" class="btn" style="padding:4px 10px;font-size:11px;" target="_blank">Print</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function filterTable() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    document.querySelectorAll('#invoiceTable tbody tr').forEach(tr => {
+        tr.style.display = tr.innerText.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+</script>
+}

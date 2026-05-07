@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — RetailBill Pro</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-name">🧾 RetailBill Pro</div>
+                <div class="brand-sub">v2.0 — ASP.NET MVC 8</div>
+            </div>
+            <nav>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                   asp-controller="Home" asp-action="Index">
+                    <span class="nav-icon">◈</span> Dashboard
+                </a>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Invoice" && ViewContext.RouteData.Values["action"]?.ToString() == "Create" ? "active" : "")"
+                   asp-controller="Invoice" asp-action="Create">
+                    <span class="nav-icon">◎</span> New Invoice
+                </a>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Invoice" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                   asp-controller="Invoice" asp-action="Index">
+                    <span class="nav-icon">≡</span> All Invoices
+                </a>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventory" ? "active" : "")"
+                   asp-controller="Inventory" asp-action="Index">
+                    <span class="nav-icon">⊞</span> Inventory
+                </a>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Customer" ? "active" : "")"
+                   asp-controller="Customer" asp-action="Index">
+                    <span class="nav-icon">◉</span> Customers
+                </a>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Report" ? "active" : "")"
+                   asp-controller="Report" asp-action="Index">
+                    <span class="nav-icon">↗</span> Reports
+                </a>
+            </nav>
+
+            <!-- User info + Logout -->
+            <div class="sidebar-footer">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="user-name">👤 @User.Identity.Name</div>
+                    <div class="user-role" style="margin-bottom:8px;">@User.FindFirst("Username")?.Value</div>
+                    <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" style="width:100%;padding:6px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;">
+                            🔓 Logout
+                        </button>
+                    </form>
+                }
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="main-area">
+            <header class="topbar">
+                <div class="topbar-title">@ViewData["Title"]</div>
+                <div class="topbar-actions">
+                    <a asp-controller="Invoice" asp-action="Create" class="btn btn-primary">+ New Invoice</a>
+                    <a href="/swagger" target="_blank" class="btn">API Docs</a>
+                </div>
+            </header>
+            <main class="content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

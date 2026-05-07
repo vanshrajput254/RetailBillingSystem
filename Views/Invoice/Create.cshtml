@@ -1,0 +1,341 @@
+@{
+    ViewData["Title"] = "New Invoice";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var customers = ViewBag.Customers as List<RetailBillingSystem.Models.Customer> ?? new();
+    var products  = ViewBag.Products  as List<RetailBillingSystem.Models.Product>  ?? new();
+}
+
+<div class="form-grid" style="gap:16px;display:grid;grid-template-columns:1fr 1fr;">
+
+    <!-- Left: Form -->
+    <div>
+        <div class="card" style="margin-bottom:14px;">
+            <div class="card-header"><span class="card-title">Invoice Details</span></div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Customer</label>
+                        <select class="form-select" id="customerId" onchange="updatePreview()">
+                            <option value="">— Select Customer —</option>
+                            @foreach (var c in customers)
+                            {
+                                <option value="@c.CustomerId" data-gstin="@c.GSTIN">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Customer GSTIN</label>
+                        <input class="form-input" id="buyerGSTIN" placeholder="Auto-filled" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Invoice Date</label>
+                        <input class="form-input" type="date" id="invoiceDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="updatePreview()" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        <input class="form-input" type="date" id="dueDate" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">GST Type</label>
+                        <select class="form-select" id="gstType" onchange="recalc()">
+                            <option value="CGST_SGST">CGST + SGST (Intra-state)</option>
+                            <option value="IGST">IGST (Inter-state)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <input class="form-input" id="notes" placeholder="Optional notes…" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items -->
+        <div class="card">
+            <div class="card-header"><span class="card-title">Line Items</span></div>
+            <div class="card-body">
+                <div class="items-table-wrap">
+                    <table id="itemsTable" style="font-size:12px;width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th>Product</th><th>Qty</th><th>Rate (₹)</th>
+                                <th>Disc %</th><th>GST %</th><th>Amount</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody"></tbody>
+                    </table>
+                </div>
+                <button class="add-item-btn" type="button" onclick="addRow()">+ Add Item</button>
+
+                <!-- Totals -->
+                <div class="invoice-totals">
+                    <div class="totals-box">
+                        <div class="total-row"><span>Subtotal</span><span id="t-subtotal">₹0.00</span></div>
+                        <div class="total-row"><span>Discount</span><span id="t-discount">−₹0.00</span></div>
+                        <div class="total-row"><span>Taxable Amount</span><span id="t-taxable">₹0.00</span></div>
+                        <div id="cgst-sgst-row">
+                            <div class="total-row"><span>CGST (9%)</span><span id="t-cgst">₹0.00</span></div>
+                            <div class="total-row"><span>SGST (9%)</span><span id="t-sgst">₹0.00</span></div>
+                        </div>
+                        <div id="igst-row" style="display:none;">
+                            <div class="total-row"><span>IGST (18%)</span><span id="t-igst">₹0.00</span></div>
+                        </div>
+                        <div class="total-row final"><span>Grand Total</span><span id="t-grand">₹0.00</span></div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="width:100%;margin-top:14px;" onclick="saveInvoice()">Save Invoice</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Live Preview -->
+    <div>
+        <div class="card">
+            <div class="card-header"><span class="card-title">Invoice Preview</span></div>
+            <div class="card-body">
+                <div class="inv-preview" id="preview">
+                    <div class="inv-head">
+                        <div>
+                            <div class="inv-company">RetailBill Pro</div>
+                            <div style="font-size:11px;color:#666;">GSTIN: 29ASHSS1234R1Z1</div>
+                        </div>
+                        <div class="inv-meta">
+                            <div class="inv-num" id="prev-invnum">INV-—</div>
+                            <div id="prev-date">Date: —</div>
+                        </div>
+                    </div>
+                    <div class="inv-bill">
+                        <div>
+                            <div class="inv-bill-label">Bill To</div>
+                            <div class="inv-bill-value" id="prev-customer">—</div>
+                        </div>
+                        <div>
+                            <div class="inv-bill-label">GSTIN</div>
+                            <div class="inv-bill-value" id="prev-gstin">—</div>
+                        </div>
+                    </div>
+                    <table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:12px;">
+                        <thead>
+                            <tr style="background:#f5f5f5;">
+                                <th style="padding:5px;text-align:left;">Item</th>
+                                <th style="padding:5px;">Qty</th>
+                                <th style="padding:5px;">Rate</th>
+                                <th style="padding:5px;">GST</th>
+                                <th style="padding:5px;text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prev-items"></tbody>
+                    </table>
+                    <div style="display:flex;justify-content:flex-end;">
+                        <div style="min-width:180px;font-size:12px;">
+                            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Subtotal</span><span id="ps">₹0.00</span></div>
+                            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Discount</span><span id="pd">−₹0.00</span></div>
+                            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>GST</span><span id="pg">₹0.00</span></div>
+                            <div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:600;border-top:1px solid #ddd;margin-top:4px;"><span>Grand Total</span><span id="pgt">₹0.00</span></div>
+                        </div>
+                    </div>
+                    <div class="gst-note" id="prev-gsttype">GST Type: CGST + SGST (Intra-state)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// Product catalogue from server
+const products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+    products.Select(p => new {
+        productId   = p.ProductId,
+        productName = p.ProductName,
+        rate        = p.Rate,
+        gstRate     = p.GSTRate
+    }),
+    new System.Text.Json.JsonSerializerOptions {
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+    }
+));
+
+let rowIndex = 0;
+let totals = { subtotal:0, discount:0, taxable:0, cgst:0, sgst:0, igst:0, grand:0 };
+
+document.getElementById('customerId').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    document.getElementById('buyerGSTIN').value = opt.dataset.gstin || '';
+    updatePreview();
+});
+
+function addRow() {
+    const idx = rowIndex++;
+    const opts = products.map(p =>
+        `<option value="${p.productId}" data-rate="${p.rate}" data-gst="${p.gstRate}">${p.productName}</option>`
+    ).join('');
+
+    const tr = document.createElement('tr');
+    tr.id = `row-${idx}`;
+    tr.innerHTML = `
+        <td><select class="form-select" style="font-size:11px;" onchange="onProductChange(${idx},this)">${opts}</select></td>
+        <td><input type="number" class="form-input" style="width:55px;font-size:11px;" value="1" min="1" oninput="recalc()" id="qty-${idx}" /></td>
+        <td><input type="number" class="form-input" style="width:75px;font-size:11px;" id="rate-${idx}" oninput="recalc()" /></td>
+        <td><input type="number" class="form-input" style="width:55px;font-size:11px;" value="0" min="0" max="100" id="disc-${idx}" oninput="recalc()" /></td>
+        <td><input type="number" class="form-input" style="width:55px;font-size:11px;" id="gst-${idx}" oninput="recalc()" /></td>
+        <td id="amt-${idx}" style="text-align:right;font-size:12px;">₹0.00</td>
+        <td><button type="button" onclick="removeRow(${idx})" style="background:none;border:none;color:#c33;cursor:pointer;font-size:14px;">✕</button></td>
+    `;
+    document.getElementById('itemsBody').appendChild(tr);
+    // Set default values from first product
+    onProductChange(idx, tr.querySelector('select'));
+}
+
+function onProductChange(idx, sel) {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById(`rate-${idx}`).value = opt.dataset.rate || '';
+    document.getElementById(`gst-${idx}`).value  = opt.dataset.gst  || 18;
+    recalc();
+}
+
+function removeRow(idx) {
+    const row = document.getElementById(`row-${idx}`);
+    if (row) row.remove();
+    recalc();
+}
+
+function recalc() {
+    const gstType = document.getElementById('gstType').value;
+    const rows    = document.querySelectorAll('#itemsBody tr');
+    let sub=0, disc=0, tax=0, cgst=0, sgst=0, igst=0;
+
+    rows.forEach(row => {
+        const id    = row.id.replace('row-','');
+        const qty   = parseFloat(document.getElementById(`qty-${id}`)?.value)  || 0;
+        const rate  = parseFloat(document.getElementById(`rate-${id}`)?.value) || 0;
+        const dp    = parseFloat(document.getElementById(`disc-${id}`)?.value) || 0;
+        const gr    = parseFloat(document.getElementById(`gst-${id}`)?.value)  || 0;
+
+        const gross = qty * rate;
+        const da    = gross * dp / 100;
+        const taxAmt= gross - da;
+        const gstAmt= taxAmt * gr / 100;
+        const line  = taxAmt + gstAmt;
+
+        sub  += gross;
+        disc += da;
+        tax  += taxAmt;
+        if (gstType === 'CGST_SGST') { cgst += gstAmt/2; sgst += gstAmt/2; }
+        else                          { igst += gstAmt; }
+
+        const amtEl = document.getElementById(`amt-${id}`);
+        if (amtEl) amtEl.textContent = '₹' + line.toFixed(2);
+    });
+
+    const grand = tax + cgst + sgst + igst;
+    totals = { subtotal:sub, discount:disc, taxable:tax, cgst, sgst, igst, grand };
+
+    document.getElementById('t-subtotal').textContent = '₹' + sub.toFixed(2);
+    document.getElementById('t-discount').textContent = '−₹' + disc.toFixed(2);
+    document.getElementById('t-taxable').textContent  = '₹' + tax.toFixed(2);
+    document.getElementById('t-cgst').textContent     = '₹' + cgst.toFixed(2);
+    document.getElementById('t-sgst').textContent     = '₹' + sgst.toFixed(2);
+    document.getElementById('t-igst').textContent     = '₹' + igst.toFixed(2);
+    document.getElementById('t-grand').textContent    = '₹' + grand.toFixed(2);
+
+    document.getElementById('cgst-sgst-row').style.display = gstType==='CGST_SGST' ? '' : 'none';
+    document.getElementById('igst-row').style.display      = gstType==='IGST'      ? '' : 'none';
+
+    updatePreview();
+}
+
+function updatePreview() {
+    const custSel  = document.getElementById('customerId');
+    const custName = custSel.options[custSel.selectedIndex]?.text || '—';
+    const gstin    = document.getElementById('buyerGSTIN').value || '—';
+    const date     = document.getElementById('invoiceDate').value || '—';
+    const gstType  = document.getElementById('gstType').value;
+
+    document.getElementById('prev-customer').textContent = custName;
+    document.getElementById('prev-gstin').textContent    = gstin;
+    document.getElementById('prev-date').textContent     = 'Date: ' + date;
+    document.getElementById('prev-gsttype').textContent  =
+        'GST Type: ' + (gstType==='IGST' ? 'IGST (Inter-state)' : 'CGST + SGST (Intra-state)');
+
+    // Preview items table
+    const rows = document.querySelectorAll('#itemsBody tr');
+    let previewHtml = '';
+    rows.forEach(row => {
+        const id   = row.id.replace('row-','');
+        const sel  = row.querySelector('select');
+        const name = sel ? sel.options[sel.selectedIndex]?.text : '—';
+        const qty  = document.getElementById(`qty-${id}`)?.value  || 0;
+        const rate = document.getElementById(`rate-${id}`)?.value || 0;
+        const gst  = document.getElementById(`gst-${id}`)?.value  || 0;
+        const amt  = document.getElementById(`amt-${id}`)?.textContent || '₹0.00';
+        previewHtml += `<tr>
+            <td style="padding:4px;">${name}</td>
+            <td style="padding:4px;text-align:center;">${qty}</td>
+            <td style="padding:4px;text-align:center;">₹${rate}</td>
+            <td style="padding:4px;text-align:center;">${gst}%</td>
+            <td style="padding:4px;text-align:right;">${amt}</td>
+        </tr>`;
+    });
+    document.getElementById('prev-items').innerHTML = previewHtml;
+
+    document.getElementById('ps').textContent  = '₹' + totals.subtotal.toFixed(2);
+    document.getElementById('pd').textContent  = '−₹' + totals.discount.toFixed(2);
+    document.getElementById('pg').textContent  = '₹' + (totals.cgst+totals.sgst+totals.igst).toFixed(2);
+    document.getElementById('pgt').textContent = '₹' + totals.grand.toFixed(2);
+}
+
+async function saveInvoice() {
+    const custId = document.getElementById('customerId').value;
+    if (!custId) { alert('Please select a customer'); return; }
+
+    const rows = document.querySelectorAll('#itemsBody tr');
+    if (rows.length === 0) { alert('Please add at least one line item'); return; }
+
+    const items = [];
+    for (const row of rows) {
+        const id  = row.id.replace('row-','');
+        const sel = row.querySelector('select');
+        items.push({
+            productId:       Number(sel.value),
+            quantity:        Number(document.getElementById(`qty-${id}`).value)  || 1,
+            rate:            Number(document.getElementById(`rate-${id}`).value) || 0,
+            discountPercent: Number(document.getElementById(`disc-${id}`).value) || 0,
+            gstRate:         Number(document.getElementById(`gst-${id}`).value)  || 0
+        });
+    }
+
+    const payload = {
+        customerId:  parseInt(custId),
+        invoiceDate: document.getElementById('invoiceDate').value,
+        dueDate:     document.getElementById('dueDate').value || null,
+        gstType:     document.getElementById('gstType').value,
+        buyerGSTIN:  document.getElementById('buyerGSTIN').value || null,
+        notes:       document.getElementById('notes').value || null,
+        items
+    };
+
+    try {
+        const res  = await fetch('/api/invoices', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            const invNum = data.invoiceNumber || data.InvoiceNumber || 'New';
+            alert(`Invoice ${invNum} saved successfully!`);
+            window.location.href = '/Invoice';
+        } else {
+            alert('Error: ' + (data.message || JSON.stringify(data)));
+        }
+    } catch (e) {
+        alert('Network error: ' + e.message);
+    }
+}
+
+// Start with one blank row
+addRow();
+</script>
+}

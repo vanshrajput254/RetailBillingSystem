@@ -1,0 +1,107 @@
+@model IEnumerable<RetailBillingSystem.Models.Customer>
+@{
+    ViewData["Title"] = "Customers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+    <form method="get" style="display:flex;gap:8px;flex:1;">
+        <input class="search-bar" style="margin:0;max-width:320px;" name="search"
+               value="@ViewBag.Search" placeholder="Search by name or phone…" />
+        <button class="btn" type="submit">Search</button>
+    </form>
+    <button class="btn btn-primary" onclick="openAdd()">+ Add Customer</button>
+</div>
+
+<div class="card">
+    <div class="card-body p0">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th><th>GSTIN</th><th>Phone</th>
+                    <th>City</th><th>Total Invoices</th><th>Total Billed</th><th>Balance Due</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    var billed = c.Invoices.Sum(i => i.GrandTotal);
+                    var due    = c.Invoices.Where(i => i.Status != RetailBillingSystem.Models.InvoiceStatus.Paid &&
+                                                        i.Status != RetailBillingSystem.Models.InvoiceStatus.Cancelled)
+                                           .Sum(i => i.GrandTotal);
+                    <tr>
+                        <td><strong>@c.Name</strong></td>
+                        <td><code>@(c.GSTIN ?? "—")</code></td>
+                        <td>@(c.Phone ?? "—")</td>
+                        <td>@(c.City ?? "—")</td>
+                        <td>@c.Invoices.Count</td>
+                        <td>₹@billed.ToString("N2")</td>
+                        <td class="@(due > 0 ? "stock-low" : "stock-ok")">₹@due.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+    <div class="card" style="width:480px;margin:0;">
+        <div class="card-header">
+            <span class="card-title">Add New Customer</span>
+            <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;font-size:16px;">✕</button>
+        </div>
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group form-full">
+                    <label class="form-label">Full Name / Business Name</label>
+                    <input class="form-input" id="c-name" placeholder="Ravi Kumar / Ravi Traders" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">GSTIN (optional)</label>
+                    <input class="form-input" id="c-gstin" placeholder="29XXXXX1234X1Z1" maxlength="15" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input class="form-input" id="c-phone" placeholder="9876543210" />
+                </div>
+                <div class="form-group form-full">
+                    <label class="form-label">Email (optional)</label>
+                    <input class="form-input" type="email" id="c-email" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">City</label>
+                    <input class="form-input" id="c-city" placeholder="Bengaluru" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">State</label>
+                    <input class="form-input" id="c-state" placeholder="Karnataka" />
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="saveCustomer()">Save Customer</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function openAdd()    { document.getElementById('modal').style.display = 'flex'; }
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+async function saveCustomer() {
+    const payload = {
+        name:  document.getElementById('c-name').value,
+        gstin: document.getElementById('c-gstin').value || null,
+        phone: document.getElementById('c-phone').value || null,
+        email: document.getElementById('c-email').value || null,
+        city:  document.getElementById('c-city').value  || null,
+        state: document.getElementById('c-state').value || null
+    };
+    const res = await fetch('/api/customers', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+    });
+    if (res.ok) { alert('Customer added!'); location.reload(); }
+    else { const d = await res.json(); alert('Error: ' + (d.message || JSON.stringify(d))); }
+}
+</script>
+}

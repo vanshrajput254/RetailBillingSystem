@@ -1,0 +1,118 @@
+@model IEnumerable<RetailBillingSystem.Models.Product>
+@{
+    ViewData["Title"] = "Inventory";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+    <form method="get" style="display:flex;gap:8px;flex:1;">
+        <input class="search-bar" style="margin:0;max-width:320px;" name="search"
+               value="@ViewBag.Search" placeholder="Search products, SKU…" />
+        <button class="btn" type="submit">Search</button>
+    </form>
+    <button class="btn btn-primary" onclick="openAddProduct()">+ Add Product</button>
+</div>
+
+<div class="card">
+    <div class="card-body p0">
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th><th>Product Name</th><th>Category</th>
+                    <th>Rate (₹)</th><th>GST %</th><th>Stock</th><th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    bool isLow = p.StockQuantity <= p.LowStockThreshold;
+                    <tr>
+                        <td><code>@p.SKU</code></td>
+                        <td>@p.ProductName</td>
+                        <td>@p.Category</td>
+                        <td>₹@p.Rate.ToString("N2")</td>
+                        <td>@p.GSTRate%</td>
+                        <td class="@(isLow ? "stock-low" : "stock-ok")">@p.StockQuantity</td>
+                        <td><span class="badge @(isLow ? "badge-overdue" : "badge-paid")">@(isLow ? "Low Stock" : "In Stock")</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+    <div class="card" style="width:440px;margin:0;">
+        <div class="card-header">
+            <span class="card-title">Add New Product</span>
+            <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;font-size:16px;">✕</button>
+        </div>
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">SKU</label>
+                    <input class="form-input" id="m-sku" placeholder="SKU001" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input class="form-input" id="m-cat" placeholder="Groceries" />
+                </div>
+                <div class="form-group form-full">
+                    <label class="form-label">Product Name</label>
+                    <input class="form-input" id="m-name" placeholder="Product name" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Rate (₹)</label>
+                    <input class="form-input" type="number" id="m-rate" min="0" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">GST Rate %</label>
+                    <select class="form-select" id="m-gst">
+                        <option value="0">0%</option>
+                        <option value="5">5%</option>
+                        <option value="12">12%</option>
+                        <option value="18" selected>18%</option>
+                        <option value="28">28%</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Opening Stock</label>
+                    <input class="form-input" type="number" id="m-stock" value="0" min="0" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Low Stock Alert</label>
+                    <input class="form-input" type="number" id="m-threshold" value="10" min="0" />
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="saveProduct()">Save Product</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function openAddProduct() {
+    document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+}
+async function saveProduct() {
+    const payload = {
+        sku:              document.getElementById('m-sku').value,
+        productName:      document.getElementById('m-name').value,
+        category:         document.getElementById('m-cat').value,
+        rate:             parseFloat(document.getElementById('m-rate').value),
+        gstRate:          parseFloat(document.getElementById('m-gst').value),
+        stockQuantity:    parseInt(document.getElementById('m-stock').value),
+        lowStockThreshold:parseInt(document.getElementById('m-threshold').value)
+    };
+    const res = await fetch('/api/products', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+    });
+    if (res.ok) { alert('Product added!'); location.reload(); }
+    else { const d = await res.json(); alert('Error: ' + (d.message || 'Unknown error')); }
+}
+</script>
+}

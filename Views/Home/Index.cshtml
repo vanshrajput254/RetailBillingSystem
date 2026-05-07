@@ -1,0 +1,150 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value">₹@String.Format("{0:N0}", ViewBag.TotalRevenue)</div>
+        <div class="stat-sub">Paid invoices</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Invoices</div>
+        <div class="stat-value">@ViewBag.TotalInvoices</div>
+        <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">GST Collected</div>
+        <div class="stat-value">₹@String.Format("{0:N0}", ViewBag.GSTCollected)</div>
+        <div class="stat-sub">CGST + SGST + IGST</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending Amount</div>
+        <div class="stat-value stat-warn">₹@String.Format("{0:N0}", ViewBag.PendingAmount)</div>
+        <div class="stat-sub stat-warn">@ViewBag.LowStockCount low-stock items</div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;">
+
+    <!-- Monthly Revenue Bar Chart -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📊 Monthly Revenue vs GST (Last 6 Months)</span>
+        </div>
+        <div class="card-body">
+            <canvas id="revenueChart" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- Invoice Status Donut Chart -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🧾 Invoice Status</span>
+        </div>
+        <div class="card-body" style="display:flex;align-items:center;justify-content:center;">
+            <canvas id="statusChart" width="180" height="180"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Invoices Table -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Recent Invoices</span>
+        <a asp-controller="Invoice" asp-action="Index" class="link-sm">View all →</a>
+    </div>
+    <div class="card-body p0">
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>GST</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var inv in (ViewBag.RecentInvoices as List<RetailBillingSystem.Models.Invoice> ?? new()))
+                {
+                    <tr>
+                        <td><strong>@inv.InvoiceNumber</strong></td>
+                        <td>@inv.Customer?.Name</td>
+                        <td>₹@inv.GrandTotal.ToString("N2")</td>
+                        <td>₹@inv.TotalGST.ToString("N2")</td>
+                        <td><span class="badge badge-@inv.Status.ToString().ToLower()">@inv.Status</span></td>
+                        <td><a asp-controller="Invoice" asp-action="Details" asp-route-id="@inv.InvoiceId" class="link-sm">View</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // ── Monthly Revenue Chart ─────────────────────────────────────────────────
+        const monthlyData = @Html.Raw(ViewBag.MonthlyChartData ?? "[]");
+        const statusData  = @Html.Raw(ViewBag.StatusChartData ?? "[]");
+
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'bar',
+            data: {
+                labels:   monthlyData.map(d => d.month),
+                datasets: [
+                    {
+                        label:           'Revenue (₹)',
+                        data:            monthlyData.map(d => d.revenue),
+                        backgroundColor: 'rgba(24,95,165,0.8)',
+                        borderRadius:    5
+                    },
+                    {
+                        label:           'GST (₹)',
+                        data:            monthlyData.map(d => d.gst),
+                        backgroundColor: 'rgba(34,197,94,0.7)',
+                        borderRadius:    5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: v => '₹' + v.toLocaleString('en-IN')
+                        }
+                    }
+                }
+            }
+        });
+
+        // ── Status Donut Chart ────────────────────────────────────────────────────
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels:   statusData.map(d => d.label),
+                datasets: [{
+                    data:            statusData.map(d => d.value),
+                    backgroundColor: statusData.map(d => d.color),
+                    borderWidth:     2,
+                    borderColor:     '#fff'
+                }]
+            },
+            options: {
+                responsive: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 11 } } }
+                },
+                cutout: '65%'
+            }
+        });
+    </script>
+}

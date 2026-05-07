@@ -1,0 +1,150 @@
+@model RetailBillingSystem.Models.Invoice
+@{
+    ViewData["Title"] = "Invoice " + Model.InvoiceNumber;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+    <a asp-controller="Invoice" asp-action="Index" class="btn">← Back</a>
+    <a asp-controller="Invoice" asp-action="Print" asp-route-id="@Model.InvoiceId" class="btn" target="_blank">🖨 Print / PDF</a>
+    @if (Model.Customer?.Email != null)
+    {
+        <button class="btn" onclick="sendEmail(@Model.InvoiceId)" id="emailBtn">
+            📧 Email to @Model.Customer.Email
+        </button>
+    }
+    @if (Model.Status != RetailBillingSystem.Models.InvoiceStatus.Paid)
+    {
+        <button class="btn btn-primary" onclick="markPaid(@Model.InvoiceId)">✓ Mark as Paid</button>
+    }
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="inv-preview">
+            <div class="inv-head">
+                <div>
+                    <div class="inv-company">RetailBill Pro</div>
+                    <div style="font-size:11px;color:#666;">GSTIN: 29ASHSS1234R1Z1</div>
+                    <div style="font-size:11px;color:#666;">Bengaluru, Karnataka</div>
+                </div>
+                <div class="inv-meta">
+                    <div class="inv-num">@Model.InvoiceNumber</div>
+                    <div>Date: @Model.InvoiceDate.ToString("dd MMM yyyy")</div>
+                    @if (Model.DueDate.HasValue)
+                    {
+                        <div>Due: @Model.DueDate.Value.ToString("dd MMM yyyy")</div>
+                    }
+                    <div style="margin-top:4px;">
+                        <span class="badge badge-@Model.Status.ToString().ToLower()">@Model.Status</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="inv-bill">
+                <div>
+                    <div class="inv-bill-label">Bill To</div>
+                    <div class="inv-bill-value">
+                        <strong>@Model.Customer?.Name</strong><br />
+                        @Model.Customer?.City, @Model.Customer?.State
+                        @if (!string.IsNullOrEmpty(Model.Customer?.Email))
+                        {
+                            <br />
+                            <span style="color:#888;">@Model.Customer.Email</span>
+ }
+                    </div>
+                </div>
+                <div>
+                    <div class="inv-bill-label">Buyer GSTIN</div>
+                    <div class="inv-bill-value">@(Model.BuyerGSTIN ?? "—")</div>
+                    <div class="inv-bill-label" style="margin-top:8px;">GST Type</div>
+                    <div class="inv-bill-value">
+                        @(Model.GSTType == RetailBillingSystem.Models.GSTType.IGST ? "IGST (Inter-state)" : "CGST + SGST (Intra-state)")
+                    </div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Disc %</th>
+                        <th>GST %</th>
+                        <th>GST Amt</th>
+                        <th style="text-align:right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int sno = 1;
+                    }
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@(sno++)</td>
+                            <td>@item.ProductName</td>
+                            <td>@item.Quantity</td>
+                            <td>₹@item.Rate.ToString("N2")</td>
+                            <td>@item.DiscountPercent%</td>
+                            <td>@item.GSTRate%</td>
+                            <td>₹@item.GSTAmount.ToString("N2")</td>
+                            <td style="text-align:right;">₹@item.LineTotal.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="invoice-totals">
+                <div class="totals-box">
+                    <div class="total-row"><span>Subtotal</span><span>₹@Model.Subtotal.ToString("N2")</span></div>
+                    <div class="total-row"><span>Discount</span><span>−₹@Model.TotalDiscount.ToString("N2")</span></div>
+                    <div class="total-row"><span>Taxable Amount</span><span>₹@Model.TaxableAmount.ToString("N2")</span></div>
+                    @if (Model.GSTType == RetailBillingSystem.Models.GSTType.CGST_SGST)
+                    {
+                        <div class="total-row"><span>CGST</span><span>₹@Model.CGSTAmount.ToString("N2")</span></div>
+                        <div class="total-row"><span>SGST</span><span>₹@Model.SGSTAmount.ToString("N2")</span></div>
+                    }
+                    else
+                    {
+                        <div class="total-row"><span>IGST</span><span>₹@Model.IGSTAmount.ToString("N2")</span></div>
+                    }
+                    <div class="total-row final"><span>Grand Total</span><span>₹@Model.GrandTotal.ToString("N2")</span></div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div class="gst-note" style="margin-top:12px;">Notes: @Model.Notes</div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function markPaid(id) {
+            if (!confirm('Mark invoice as Paid?')) return;
+            const res = await fetch(`/api/invoices/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Paid' })
+            });
+            if (res.ok) location.reload();
+            else alert('Failed to update status');
+        }
+
+        async function sendEmail(id) {
+            const btn = document.getElementById('emailBtn');
+            btn.disabled    = true;
+            btn.textContent = '📧 Sending…';
+            const res  = await fetch(`/Invoice/SendEmail/${id}`, { method: 'POST' });
+            const data = await res.json();
+            alert(data.message);
+            btn.disabled    = false;
+            btn.textContent = '📧 Send Email';
+        }
+    </script>
+}

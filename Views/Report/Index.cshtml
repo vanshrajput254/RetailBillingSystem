@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "GST Reports";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int month = (int)ViewBag.Month;
+    int year  = (int)ViewBag.Year;
+}
+
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+    <form method="get" style="display:flex;gap:8px;">
+        <select class="form-select" name="month">
+            @for (int m = 1; m <= 12; m++)
+            {
+                <option value="@m" selected="@(m == month)">
+                    @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
+                </option>
+            }
+        </select>
+        <select class="form-select" name="year">
+            @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 3; y--)
+            {
+                <option value="@y" selected="@(y == year)">@y</option>
+            }
+        </select>
+        <button class="btn btn-primary" type="submit">Generate Report</button>
+    </form>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-value">₹@String.Format("{0:N0}", ViewBag.TotalSales)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Taxable Amount</div>
+        <div class="stat-value">₹@String.Format("{0:N0}", ViewBag.TaxableAmount)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total GST Payable</div>
+        <div class="stat-value">₹@String.Format("{0:N0}", ViewBag.TotalGST)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Discount Given</div>
+        <div class="stat-value">₹@String.Format("{0:N0}", ViewBag.TotalDiscount)</div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="card">
+        <div class="card-header"><span class="card-title">GST Breakup</span></div>
+        <div class="card-body">
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;">
+                <span style="color:#666;">Output CGST</span><span>₹@((decimal)ViewBag.TotalCGST).ToString("N2")</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;">
+                <span style="color:#666;">Output SGST</span><span>₹@((decimal)ViewBag.TotalSGST).ToString("N2")</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;">
+                <span style="color:#666;">Output IGST</span><span>₹@((decimal)ViewBag.TotalIGST).ToString("N2")</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:600;">
+                <span>Net GST Payable</span><span>₹@((decimal)ViewBag.TotalGST).ToString("N2")</span>
+            </div>
+            <button class="btn" style="width:100%;margin-top:6px;font-size:11px;"
+                onclick="downloadCSV()">⬇ Download GSTR-1 CSV</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><span class="card-title">Invoices This Month</span></div>
+        <div class="card-body p0">
+            <table>
+                <thead><tr><th>Invoice #</th><th>Customer</th><th>Taxable</th><th>GST</th><th>Total</th></tr></thead>
+                <tbody>
+                    @foreach (var inv in (Model as IEnumerable<RetailBillingSystem.Models.Invoice> ?? Enumerable.Empty<RetailBillingSystem.Models.Invoice>()))
+                    {
+                        <tr>
+                            <td>@inv.InvoiceNumber</td>
+                            <td>@inv.Customer?.Name</td>
+                            <td>₹@inv.TaxableAmount.ToString("N2")</td>
+                            <td>₹@inv.TotalGST.ToString("N2")</td>
+                            <td>₹@inv.GrandTotal.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+async function downloadCSV() {
+    const month = @month, year = @year;
+    const res   = await fetch(`/api/dashboard/gst-report?month=${month}&year=${year}`);
+    const d     = await res.json();
+    const csv   = [
+        'Field,Amount (INR)',
+        `Total Sales,${d.totalSales}`,
+        `Total Discount,${d.totalDiscount}`,
+        `Taxable Amount,${d.taxableAmount}`,
+        `CGST,${d.totalCGST}`,
+        `SGST,${d.totalSGST}`,
+        `IGST,${d.totalIGST}`,
+        `Net GST Payable,${d.totalGSTPayable}`
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `GSTR1_${year}_${String(month).padStart(2,'0')}.csv`;
+    a.click();
+}
+</script>
+}
